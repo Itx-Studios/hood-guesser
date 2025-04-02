@@ -1,11 +1,12 @@
 import sys
 import threading
+import math
 import pygame
 import random
 import webbrowser
 import os
 
-from PyQt5.QtWidgets import QApplication, QMainWindow, QWidget, QVBoxLayout, QPushButton
+from PyQt5.QtWidgets import QApplication, QMainWindow, QWidget, QVBoxLayout, QPushButton, QMessageBox
 from PyQt5.QtWebEngineWidgets import QWebEngineView
 
 # ---------------------------
@@ -51,7 +52,16 @@ def random_point_in_polygon(points):
         if point_in_polygon((random_lat, random_lon), points):
             return random_lat, random_lon
 
-# Gemeinsame Variable zur Speicherung des zuletzt ermittelten Punkts
+# Funktion zur Berechnung der Entfernung (Haversine-Formel)
+def haversine_distance(lat1, lon1, lat2, lon2):
+    R = 6371.0  # Erdradius in Kilometern
+    dlat = math.radians(lat2 - lat1)
+    dlon = math.radians(lon2 - lon1)
+    a = math.sin(dlat/2)**2 + math.cos(math.radians(lat1)) * math.cos(math.radians(lat2)) * math.sin(dlon/2)**2
+    c = 2 * math.atan2(math.sqrt(a), math.sqrt(1-a))
+    return R * c
+
+# Globale Variable zur Speicherung der "tatsächlichen" Koordinaten (Street View)
 shared_coords = None
 
 # ---------------------------
@@ -60,24 +70,25 @@ shared_coords = None
 def run_pygame():
     global shared_coords
     pygame.init()
-
-    # Titelbild laden
+    clock = pygame.time.Clock()
+    
     base_path = os.path.dirname(__file__)
-    title_image_path = os.path.join(base_path, "title_img.png")
-    background_image = pygame.image.load(title_image_path)
-
-    # Fenstergröße an Bildgröße anpassen
+    # Bilder einmal laden (zur Performance-Verbesserung)
+    title_img = pygame.image.load(os.path.join(base_path, "title_img.png"))
+    lobby_img = pygame.image.load(os.path.join(base_path, "lobby_img.png"))
+    re_img = pygame.image.load(os.path.join(base_path, "re_img.png"))
+    
+    background_image = title_img
     screen_width, screen_height = background_image.get_size()
     screen = pygame.display.set_mode((screen_width, screen_height))
     pygame.display.set_caption("Google Maps mit zufälligem Punkt im Polygon öffnen")
 
     running = True
     in_lobby = False
-    # Definierte Klickbereiche (Koordinaten und Größe anpassen, falls erforderlich)
-    click_area = pygame.Rect(238, 469, 523, 109)  # Bereich für Google Maps
+    click_area = pygame.Rect(238, 469, 523, 109)  # Bereich für Google Maps/Street View
     play_area = pygame.Rect(231, 448, 523, 109)   # Bereich für „Spielen“
 
-    # Initialen zufälligen Punkt ermitteln (wird später aktualisiert)
+    # Initialen zufälligen Punkt ermitteln
     shared_coords = random_point_in_polygon(points)
 
     while running:
@@ -87,41 +98,35 @@ def run_pygame():
 
             if event.type == pygame.MOUSEBUTTONDOWN:
                 mouse_pos = pygame.mouse.get_pos()
-                print(f"Mouse clicked at: {mouse_pos}")  # Debug-Ausgabe
+                print(f"Pygame - Mouse clicked at: {mouse_pos}")
 
                 if not in_lobby:
                     if play_area.collidepoint(mouse_pos):
-                        print("Clicked on the play area!")
-                        # Lobby-Bild laden
-                        lobby_image_path = os.path.join(base_path, "lobby_img.png")
-                        background_image = pygame.image.load(lobby_image_path)
+                        print("Pygame - Play area clicked, wechsle in Lobby.")
+                        background_image = lobby_img
                         in_lobby = True
                     else:
-                        print("Clicked outside the play area.")
+                        print("Pygame - Außerhalb des Play-Bereichs geklickt.")
                 else:
                     if click_area.collidepoint(mouse_pos):
-                        print("Opening Google Maps...")
-                        # Neuen zufälligen Punkt im Polygon berechnen
+                        print("Pygame - Google Maps/Street View Bereich geklickt.")
+                        # Neuen zufälligen Punkt berechnen und als tatsächliche Koordinate setzen
                         shared_coords = random_point_in_polygon(points)
                         random_lat, random_lon = shared_coords
-                        # Google Maps mit dem neuen Punkt öffnen
                         url = f"https://www.google.com/maps?q=&layer=c&cbll={random_lat},{random_lon}"
                         webbrowser.open(url)
-                        # Neues Bild (re_img) laden
-                        re_image_path = os.path.join(base_path, "re_img.png")
-                        background_image = pygame.image.load(re_image_path)
-                        # Fenster aktualisieren
+                        background_image = re_img
                         screen.blit(background_image, (0, 0))
                         pygame.display.flip()
 
-        # Hintergrundbild zeichnen und Fenster aktualisieren
         screen.blit(background_image, (0, 0))
         pygame.display.flip()
+        clock.tick(30)  # 30 FPS
 
     pygame.quit()
 
 # ---------------------------
-# PyQt-Anwendung: OSM Map mit Button zum Speichern der Koordinaten
+# PyQt-Anwendung: OSM Map mit Button, der beim Klick den tatsächlichen Punkt (shared_coords) als grünen Marker anzeigt
 # ---------------------------
 html = """
 <!DOCTYPE html>
@@ -136,25 +141,31 @@ html = """
       margin: 0;
       padding: 0;
     }
+    /* Rotes Fadenkreuz in der Mitte */
+    #crosshair {
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      width: 10px;
+      height: 10px;
+      background-color: red;
+      border-radius: 50%;
+      transform: translate(-50%, -50%);
+      pointer-events: none;
+      z-index: 1000;
+    }
   </style>
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.7.1/dist/leaflet.css"/>
   <script src="https://unpkg.com/leaflet@1.7.1/dist/leaflet.js"></script>
 </head>
 <body>
   <div id="map"></div>
+  <div id="crosshair"></div>
   <script>
-    // Karte wird initial auf München zentriert
+    // Karte initial auf München zentrieren
     var map = L.map('map').setView([48.1351, 11.5820], 13);
     L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
       attribution: 'Map data © <a href="https://openstreetmap.org">OpenStreetMap</a> contributors'
-    }).addTo(map);
-    
-    // Permanenter roter Marker (Startposition: München)
-    window.savedMarker = L.circleMarker([48.1351, 11.5820], {
-      color: 'red',
-      fillColor: 'red',
-      fillOpacity: 1,
-      radius: 5
     }).addTo(map);
   </script>
 </body>
@@ -164,61 +175,53 @@ html = """
 class MapWindow(QMainWindow):
     def __init__(self):
         super().__init__()
-        self.setWindowTitle("OSM Map mit Koordinatenspeicherung")
+        self.setWindowTitle("OSM Map mit tatsächlichen Koordinaten")
         self.setGeometry(100, 100, 2000, 1600)
 
-        # Container und Layout
         self.container = QWidget()
         self.layout = QVBoxLayout(self.container)
         self.setCentralWidget(self.container)
 
-        # QWebEngineView zur Anzeige der Karte
         self.browser = QWebEngineView()
         self.browser.setHtml(html)
         
-        # Button zum Abfragen des Kartenmittelpunkts und Platzieren eines roten Punktes
-        self.save_button = QPushButton("Koordinaten speichern")
-        self.save_button.clicked.connect(self.save_center)
+        # Button zum Anzeigen des tatsächlichen (Street View) Punkts als grünen Marker
+        self.save_button = QPushButton("Tatsächliche Koordinaten anzeigen")
+        self.save_button.clicked.connect(self.show_actual_point)
 
-        # Hinzufügen der Widgets zum Layout
         self.layout.addWidget(self.browser)
         self.layout.addWidget(self.save_button)
     
-    def save_center(self):
-        # JavaScript-Code, um das aktuelle Zentrum der Karte abzurufen
-        js = "var center = map.getCenter(); [center.lat, center.lng];"
-        self.browser.page().runJavaScript(js, self.handle_center)
-    
-    def handle_center(self, result):
-        if result:
-            lat, lng = result
-            print("Zentrum Koordinaten:", lat, lng)
-            # Marker (roter Punkt) an der neuen Position platzieren bzw. verschieben
-            js_add_marker = f"""
-            if (window.savedMarker) {{
-                map.removeLayer(window.savedMarker);
+    def show_actual_point(self):
+        global shared_coords
+        if shared_coords is not None:
+            actual_lat, actual_lon = shared_coords
+            # Erstelle einen grünen Marker an den tatsächlichen Koordinaten
+            js_update_marker = f"""
+            if (window.actualMarker) {{
+                map.removeLayer(window.actualMarker);
             }}
-            window.savedMarker = L.circleMarker([{lat}, {lng}], {{
-                color: 'red',
-                fillColor: 'red',
+            window.actualMarker = L.circleMarker([{actual_lat}, {actual_lon}], {{
+                color: 'green',
+                fillColor: 'green',
                 fillOpacity: 1,
                 radius: 5
             }}).addTo(map);
             """
-            self.browser.page().runJavaScript(js_add_marker)
+            self.browser.page().runJavaScript(js_update_marker)
+            QMessageBox.information(self, "Tatsächliche Koordinaten", f"Tatsächliche Koordinaten: {actual_lat}, {actual_lon}")
         else:
-            print("Fehler beim Abrufen der Koordinaten.")
+            QMessageBox.warning(self, "Fehler", "Tatsächliche Koordinaten sind noch nicht verfügbar.")
 
 # ---------------------------
-# Main: Starten der PyQt-Anwendung und des Pygame-Threads
+# Main: Starte PyQt-Anwendung und Pygame-Thread
 # ---------------------------
 if __name__ == '__main__':
-    # PyQt-Anwendung starten (muss im Hauptthread laufen)
     app = QApplication(sys.argv)
     map_window = MapWindow()
     map_window.show()
 
-    # Pygame in einem separaten Thread starten
+    # Pygame-Anwendung in separatem Thread starten (als daemon)
     pygame_thread = threading.Thread(target=run_pygame, daemon=True)
     pygame_thread.start()
 
