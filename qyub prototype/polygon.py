@@ -6,8 +6,8 @@ import os
 
 def load_points(polygon_name):
     dirname = os.path.dirname(__file__)
-    with open(os.path.join(dirname, "config.json"), "r") as file:
-        config = json.loads(file)
+    with open(os.path.join(dirname, "config.json"), "r", encoding="utf-8") as file:
+        config = json.loads(file.read())
         return config["polygons"][polygon_name]
 
 # Get random point inside the polygon
