@@ -1,22 +1,18 @@
 body {
+    margin: 0;
     overflow: hidden;
 }
 
-.particle {
+canvas {
     position: absolute;
-    width: 6px;
-    height: 6px;
-    background: rgba(0, 255, 0, 0.8);
-    border-radius: 50%;
-    /*animation: float 6s ease-in-out infinite;*/
+    display: block;
     z-index: -1;
 }
 
-@keyframes float {
-    0%, 100% {
-        transform: translateY(0);
-    }
-    50% {
-        transform: translateY(-30px);
-    }
+.button-container {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 5;
+    flex-direction: column;
 }

@@ -8,17 +8,13 @@
   <link rel="stylesheet" href="style.css">
 </head>
 <body>
-  <div x-data="particles()" @mousemove.window="updateParticles($event)" class="absolute inset-0 pointer-events-none">
-    <template x-for="particle in particles" :key="particle.id">
-      <div
-        class="particle"
-        :style="`left: ${particle.x}px; top: ${particle.y}px;`">
-      </div>
-    </template>
+  <div x-data="particleEffect()" @mousemove="updateMouse($event)" @resize.window="resizeCanvas">
+    <canvas x-ref="canvas"></canvas>
   </div>
-  <div x-data="{ count: 0 }">
-    <button x-on:click="count++">Increment</button>
-    <span x-text="count"></span>
+  <div x-data class="button-container">
+    <button @click="window.api.send('requestOpenStreetView', 48.857508, 2.295727, 10000)">
+      Click
+    </button>
   </div>
 </body>
 </html>

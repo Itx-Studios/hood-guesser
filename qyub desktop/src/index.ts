@@ -1,29 +1,53 @@
-import { app, BrowserWindow } from "electron";
+import { app, BrowserWindow, ipcMain } from "electron";
+import { createMainWindow, createStreetViewWindow, streetViewURL } from "./window.js";
 
-const createWindow = () => {
-    const win = new BrowserWindow({
-        width: 800,
-        height: 600,
-        title: "Hood Guesser",
-        icon: "assets/icon.png",
-        autoHideMenuBar: true,
-        darkTheme: true,
-        webPreferences: {
-            nodeIntegration: false,
-            contextIsolation: true,
-            // preload: path.join(__dirname, "preload.js")
-        }
-    });
-
-    win.loadFile(`dist/render/index.html`);
-};
-
-app.on("ready", () => {createWindow()});
+app.on("ready", () => {
+    createMainWindow();
+});
 
 app.on("window-all-closed", () => {
     process.platform !== "darwin" && app.quit();
 });
 
 app.on("activate", () => {
-    BrowserWindow.getAllWindows().length === 0 && createWindow();
+    BrowserWindow.getAllWindows().length === 0 && createMainWindow();
+});
+
+let streetViewWin: BrowserWindow | null = null;
+let streetViewTimer: NodeJS.Timeout;
+
+function setStreetViewTimer(time: number) {
+    streetViewTimer = setTimeout(() => {
+        if (streetViewWin && !streetViewWin.isDestroyed()) {
+            streetViewWin.close();
+        }
+    }, time);
+}
+
+ipcMain.on("requestOpenStreetView", (_, [latitude, longitude, timer]: [number, number, number]) => {
+    if (typeof latitude !== "number" || typeof longitude !== "number") {
+        throw new Error("Invalid parameters: latitude and longitude must be numbers");
+    }
+
+    if (streetViewWin && !streetViewWin.isDestroyed()) {
+        streetViewWin.loadURL(streetViewURL(latitude, longitude));
+        clearTimeout(streetViewTimer);
+        setStreetViewTimer(timer);
+        return;
+    }
+
+    streetViewWin = createStreetViewWindow(latitude, longitude);
+
+    streetViewWin.on("closed", () => {
+        streetViewWin = null;
+    })
+
+    setStreetViewTimer(timer);
+});
+
+ipcMain.on("requestCloseStreetView", () => {
+    if (streetViewWin && !streetViewWin.isDestroyed()) {
+        streetViewWin.close();
+        clearTimeout(streetViewTimer);
+    }
 });
