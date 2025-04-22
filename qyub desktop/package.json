@@ -1,0 +1,35 @@
+{
+  "name": "hoodguesser-desktop",
+  "version": "1.0.0",
+  "main": "dist/index.js",
+  "scripts": {
+    "build": "node build.js",
+    "prestart": "npm run build",
+    "start": "electron-forge start",
+    "package": "electron-forge package",
+    "make": "electron-forge make"
+  },
+  "author": "QYUb",
+  "license": "ISC",
+  "type": "module",
+  "description": "Hoodguesser desktop client",
+  "devDependencies": {
+    "@electron-forge/cli": "^7.8.0",
+    "@electron-forge/maker-deb": "^7.8.0",
+    "@electron-forge/maker-rpm": "^7.8.0",
+    "@electron-forge/maker-squirrel": "^7.8.0",
+    "@electron-forge/maker-zip": "^7.8.0",
+    "@electron-forge/plugin-auto-unpack-natives": "^7.8.0",
+    "@electron-forge/plugin-fuses": "^7.8.0",
+    "@electron/fuses": "^1.8.0",
+    "@types/alpinejs": "^3.13.11",
+    "@types/electron": "^1.6.12",
+    "electron": "^35.2.0",
+    "esbuild": "^0.25.2",
+    "typescript": "^5.8.3"
+  },
+  "dependencies": {
+    "alpinejs": "^3.14.9",
+    "electron-squirrel-startup": "^1.0.1"
+  }
+}
