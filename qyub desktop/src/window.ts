@@ -63,7 +63,7 @@ export function createStreetViewWindow(latitude: number, longitude: number): Bro
         800,
         600,
         false,
-        streetViewURL(latitude, longitude)
+        streetViewURL(latitude, longitude),
     );
     win.maximize();
     return win;

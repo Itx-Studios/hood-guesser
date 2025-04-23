@@ -24,12 +24,14 @@
     "@electron/fuses": "^1.8.0",
     "@types/alpinejs": "^3.13.11",
     "@types/electron": "^1.6.12",
+    "@types/leaflet": "^1.9.17",
     "electron": "^35.2.0",
     "esbuild": "^0.25.2",
     "typescript": "^5.8.3"
   },
   "dependencies": {
     "alpinejs": "^3.14.9",
-    "electron-squirrel-startup": "^1.0.1"
+    "electron-squirrel-startup": "^1.0.1",
+    "leaflet": "^1.9.4"
   }
 }

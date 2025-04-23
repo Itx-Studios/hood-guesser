@@ -6,15 +6,21 @@
   <title>Hood Guesser</title>
   <script src="bundle.min.js" defer></script>
   <link rel="stylesheet" href="style.css">
+  <link rel="stylesheet" href="../../node_modules/leaflet/dist/leaflet.css" />
 </head>
 <body>
-  <div x-data="particleEffect()" @mousemove="updateMouse($event)" @resize.window="resizeCanvas">
-    <canvas x-ref="canvas"></canvas>
-  </div>
-  <div x-data class="button-container">
-    <button @click="window.api.send('requestOpenStreetView', 48.857508, 2.295727, 10000)">
-      Click
-    </button>
+  <div x-data="gameData()">
+    <div x-show="!isActive">
+      <div x-data="backgroundData()" @mousemove="updateMouse(event)" @mouseenter="showBulb = true" @mouseleave="showBulb = false" class="background">
+        <div class="bulb" x-show="showBulb" :style="`left: ${mouseX - 50}px; top: ${mouseY - 50}px;`"></div>
+      </div>
+      <div x-data class="button-container">
+        <button @click="handleNewGame()">
+          Click
+        </button>
+      </div>
+    </div>
+    <div x-data="mapData()" x-show="isActive" class="map"></div>
   </div>
 </body>
 </html>

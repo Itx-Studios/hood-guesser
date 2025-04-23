@@ -1,6 +1,10 @@
-body {
+html, body {
     margin: 0;
+    padding: 0;
     overflow: hidden;
+    height: 100%;
+    background-color: #242424;
+    z-index: -2;
 }
 
 canvas {
@@ -15,4 +19,30 @@ canvas {
     align-items: center;
     gap: 5;
     flex-direction: column;
+}
+
+
+.map {
+    position: absolute;
+    height: 100%;
+    width: 100%;
+}
+
+.background {
+    position: fixed;
+    z-index: 1;
+    height: 100%;
+    width: 100%;
+    pointer-events: none;
+}
+
+.bulb {
+    position: fixed;
+    z-index: -1;
+    height: 100px;
+    width: 100px;
+    border-radius: 100;
+    background-color: aqua;
+    pointer-events: none;
+    filter: blur(75px);
 }
