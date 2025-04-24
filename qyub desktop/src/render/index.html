@@ -4,13 +4,13 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Hood Guesser</title>
-  <script src="bundle.min.js" defer></script>
-  <link rel="stylesheet" href="style.css">
   <link rel="stylesheet" href="../../node_modules/leaflet/dist/leaflet.css" />
+  <link rel="stylesheet" href="style.css">
+  <script src="bundle.min.js" defer></script>
 </head>
 <body>
   <div x-data="gameData()">
-    <div x-show="!isActive">
+    <div x-show="!phase">
       <div x-data="backgroundData()" @mousemove="updateMouse(event)" @mouseenter="showBulb = true" @mouseleave="showBulb = false" class="background">
         <div class="bulb" x-show="showBulb" :style="`left: ${mouseX - 50}px; top: ${mouseY - 50}px;`"></div>
       </div>
@@ -20,7 +20,11 @@
         </button>
       </div>
     </div>
-    <div x-data="mapData()" x-show="isActive" class="map"></div>
+    <div x-ref="mapDiv" x-show="phase" class="map">
+      <button class="submit-button" @click="handleSubmitGuess()">
+        <img src="../../assets/check.svg" alt="lock in" width="24" height="24">
+      </button>
+    </div>
   </div>
 </body>
 </html>
