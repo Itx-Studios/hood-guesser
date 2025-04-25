@@ -21,8 +21,11 @@
       </div>
     </div>
     <div x-ref="mapDiv" x-show="phase" class="map">
+      <div x-show="phase === 'guess'" class="timer">
+        <p x-text="formatTime(timeLeft)"></p>
+      </div>
       <button class="submit-button" @click="handleSubmitGuess()">
-        <img src="../../assets/check.svg" alt="lock in" width="24" height="24">
+        <img :src="phase === 'guess'? '../../assets/vote.svg': '../../assets/arrow_right.svg'" alt="ok" width="24" height="24">
       </button>
     </div>
   </div>

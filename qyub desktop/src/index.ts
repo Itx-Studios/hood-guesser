@@ -40,6 +40,7 @@ ipcMain.on("requestOpenStreetView", (_, [latitude, longitude, timer]: [number, n
 
     streetViewWin.on("closed", () => {
         streetViewWin = null;
+        clearTimeout(streetViewTimer);
     })
 
     setStreetViewTimer(timer);
