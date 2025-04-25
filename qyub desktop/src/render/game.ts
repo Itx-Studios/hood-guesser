@@ -1,11 +1,11 @@
 import * as L from "leaflet";
-import { earthDistance, formatDistance, formatTime } from "./utils";
+import { earthDistance, formatDistance, formatTime, getPolygonBounds, loadGameSet, randomPointInCircle, randomPointInPolygon } from "./utils";
 
 export function gameData() {
     return {
         phase: null as "guess" | "reveal" | null,
+
         goal: [0, 0] as [number, number],
-        timerTimeout: null as NodeJS.Timeout | null,
         timerInterval: null as NodeJS.Timeout | null,
         timeLeft: 0,
 
@@ -13,6 +13,10 @@ export function gameData() {
         marker: null as L.Marker | null,
         goalMarker: null as L.Marker | null,
         distLine: null as L.Polyline | null,
+
+        timeSelect: 30 as number,
+        gameSetName: "Munich medium",
+        gameSet: null as any,
 
         $refs: null as any,
 
@@ -44,34 +48,56 @@ export function gameData() {
             L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
                 attribution: 'Map data © <a href="https://openstreetmap.org">OpenStreetMap</a> contributors'
             }).addTo(this.map);
+
+            this.gameSet = loadGameSet(this.gameSetName);
         },
 
         handleNewGame() {
-            const inData = {lat: 48.857508, lon: 2.295727, timer: 20000};
+            if (!this.gameSet) return;
+
+            if (this.gameSet.type === "polygon") {
+                if (!this.gameSet.points) return;
+                this.goal = randomPointInPolygon(this.gameSet.points);
+            } else if (this.gameSet.type === "radius") {
+                if (!this.gameSet.radius || !this.gameSet.center) return;
+                if (!(this.gameSet.center instanceof Array)) return;
+                if (this.gameSet.center.length !== 2 || !this.gameSet.center.every((val: any) => typeof val === "number")) return;
+                if (typeof this.gameSet.radius !== "number") return;
+
+                this.goal = randomPointInCircle(this.gameSet.center[0], this.gameSet.center[1], this.gameSet.radius);
+            } else {
+                return;
+            }
 
             this.phase = "guess";
-            this.goal = [inData.lat, inData.lon];
 
-            window.api.send("requestOpenStreetView", inData.lat, inData.lon, inData.timer);
+            window.api.send("requestOpenStreetView", this.goal[0], this.goal[1], this.timeSelect * 1000);
 
-            this.map?.setView([inData.lat, inData.lon], 13);
-            setTimeout(() => this.map?.invalidateSize(), 200);
-
-            this.timeLeft = Math.round(inData.timer / 1000);
-
-            this.timerTimeout = setTimeout(() => {
-                alert("Time up!");
-                this.handleGameResult();
-            }, inData.timer);
+            this.timeLeft = this.timeSelect;
 
             this.timerInterval = setInterval(() => {
                 this.timeLeft--;
+                if (this.timeLeft === 0) {
+                    alert("Time up");
+                    this.handleGameResult();
+                }
             }, 1000);
+
+            this.map?.setView([0, 0], 20);
+
+            if (this.gameSet.type === "radius") {
+                this.map?.fitBounds(L.circle(this.gameSet.center, {radius: this.gameSet.radius}).getBounds(), {maxZoom: 13});
+            } else {
+                const [minX, maxX, minY, maxY] = getPolygonBounds(this.gameSet.points);
+                this.map?.fitBounds(L.polygon([[minX, minY], [minX, maxY], [maxX, minY], [maxX, maxY]]).getBounds());
+            }
+
+            setTimeout(() => this.map?.invalidateSize(), 200);
         },
 
         handleSubmitGuess() {
             if (this.phase === "guess") {
-                if (!this.timerTimeout) return;
+                if (!this.timerInterval) return;
 
                 if (!this.marker) {
                     alert("No point selected");
@@ -86,11 +112,6 @@ export function gameData() {
 
         handleGameResult() {
             if (!this.map) return;
-
-            if (this.timerTimeout) {
-                clearTimeout(this.timerTimeout);
-                this.timerTimeout = null;
-            }
 
             if (this.timerInterval) {
                 clearInterval(this.timerInterval);

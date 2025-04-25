@@ -15,6 +15,17 @@
         <div class="bulb" x-show="showBulb" :style="`left: ${mouseX - 50}px; top: ${mouseY - 50}px;`"></div>
       </div>
       <div x-data class="button-container">
+        <div class="radio-chip-container">
+          <button class="radio-chip" :class="timeSelect === 10 && 'selected-chip'" @click="timeSelect = 10">
+            10 seconds
+          </button>
+          <button class="radio-chip" :class="timeSelect === 30 && 'selected-chip'" @click="timeSelect = 30">
+            30 seconds
+          </button>
+          <button class="radio-chip" :class="timeSelect === 60 && 'selected-chip'" @click="timeSelect = 60">
+            60 seconds
+          </button>
+        </div>
         <button @click="handleNewGame()">
           Click
         </button>
